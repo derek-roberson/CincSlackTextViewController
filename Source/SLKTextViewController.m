@@ -155,8 +155,7 @@ CGFloat const SLKAutoCompletionViewDefaultHeight = 140.0;
     self.keyboardPanningEnabled = YES;
     self.shouldClearTextAtRightButtonPress = YES;
     self.shouldScrollToBottomAfterKeyboardShows = NO;
-    
-    self.automaticallyAdjustsScrollViewInsets = YES;
+	self.scrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentAutomatic;
     self.extendedLayoutIncludesOpaqueBars = YES;
 }
 
@@ -460,22 +459,25 @@ CGFloat const SLKAutoCompletionViewDefaultHeight = 140.0;
 
 - (CGFloat)slk_topBarsHeight
 {
-    // No need to adjust if the edge isn't available
-    if ((self.edgesForExtendedLayout & UIRectEdgeTop) == 0) {
-        return 0.0;
-    }
-    
-    CGFloat topBarsHeight = CGRectGetHeight(self.navigationController.navigationBar.frame);
-    
-    if ((SLK_IS_IPHONE && SLK_IS_LANDSCAPE && SLK_IS_IOS8_AND_HIGHER) ||
-        (SLK_IS_IPAD && self.modalPresentationStyle == UIModalPresentationFormSheet) ||
-        self.isPresentedInPopover) {
-        return topBarsHeight;
-    }
-    
-    topBarsHeight += CGRectGetHeight([UIApplication sharedApplication].statusBarFrame);
-    
-    return topBarsHeight;
+	// No need to adjust if the edge isn't available
+	if ((self.edgesForExtendedLayout & UIRectEdgeTop) == 0) {
+		return 0.0;
+	}
+	
+	CGFloat topBarsHeight = CGRectGetHeight(self.navigationController.navigationBar.frame);
+	
+	if ((SLK_IS_IPHONE && SLKIsLandscape() && SLK_IS_IOS8_AND_HIGHER) ||
+		(SLK_IS_IPAD && self.modalPresentationStyle == UIModalPresentationFormSheet) ||
+		self.isPresentedInPopover) {
+		return topBarsHeight;
+	}
+	UIApplication *sharedApp = [UIApplication safeSharedApplication];
+	if (sharedApp == nil) {
+		return topBarsHeight;
+	}
+	topBarsHeight += CGRectGetHeight(sharedApp.statusBarFrame);
+	
+	return topBarsHeight;
 }
 
 - (NSString *)slk_appropriateKeyboardNotificationName:(NSNotification *)notification
@@ -1170,7 +1172,7 @@ CGFloat const SLKAutoCompletionViewDefaultHeight = 140.0;
     CGRect endFrame = [notification.userInfo[UIKeyboardFrameEndUserInfoKey] CGRectValue];
     
     // Fixes iOS7 oddness with inverted values on landscape orientation
-    if (!SLK_IS_IOS8_AND_HIGHER && SLK_IS_LANDSCAPE) {
+    if (!SLK_IS_IOS8_AND_HIGHER && SLKIsLandscape()) {
         beginFrame = SLKRectInvert(beginFrame);
         endFrame = SLKRectInvert(endFrame);
     }
@@ -1780,7 +1782,7 @@ CGFloat const SLKAutoCompletionViewDefaultHeight = 140.0;
                             if (prefix.length > 0 && word.length > 0) {
                                 
                                 // Captures the detected symbol prefix
-                                _foundPrefix = prefix;
+								self->_foundPrefix = prefix;
                                 
                                 // Removes the found prefix, or not.
                                 _foundWord = [word substringFromIndex:prefix.length];
@@ -1861,6 +1863,7 @@ CGFloat const SLKAutoCompletionViewDefaultHeight = 140.0;
 
 - (void)slk_reloadTextView
 {
+	NSError *error = nil;
     NSString *key = [self slk_keyForPersistency];
     if (key == nil) {
         return;
@@ -1873,7 +1876,7 @@ CGFloat const SLKAutoCompletionViewDefaultHeight = 140.0;
             cachedAttributedText = [[NSAttributedString alloc] initWithString:obj];
         }
         else if ([obj isKindOfClass:[NSData class]]) {
-            cachedAttributedText = [NSKeyedUnarchiver unarchiveObjectWithData:obj];
+            cachedAttributedText = [NSKeyedUnarchiver unarchivedObjectOfClass:[NSData class] fromData:obj error:&error];
         }
     }
     
@@ -1894,6 +1897,7 @@ CGFloat const SLKAutoCompletionViewDefaultHeight = 140.0;
 
 - (void)slk_cacheAttributedTextToDisk:(NSAttributedString *)attributedText
 {
+	NSError *error = nil;
     NSString *key = [self slk_keyForPersistency];
     
     if (!key || key.length == 0) {
@@ -1907,13 +1911,14 @@ CGFloat const SLKAutoCompletionViewDefaultHeight = 140.0;
             cachedAttributedText = [[NSAttributedString alloc] initWithString:obj];
         }
         else if ([obj isKindOfClass:[NSData class]]) {
-            cachedAttributedText = [NSKeyedUnarchiver unarchiveObjectWithData:obj];
+//            cachedAttributedText = [NSKeyedUnarchiver unarchiveObjectWithData:obj];
+			cachedAttributedText = [NSKeyedUnarchiver unarchivedObjectOfClass:[NSData class] fromData:obj error:&error];
         }
     }
     
     // Caches text only if its a valid string and not already cached
     if (attributedText.length > 0 && ![attributedText isEqualToAttributedString:cachedAttributedText]) {
-        NSData *data = [NSKeyedArchiver archivedDataWithRootObject:attributedText];
+		NSData *data = [NSKeyedArchiver archivedDataWithRootObject:attributedText requiringSecureCoding:YES error:&error];
         [[NSUserDefaults standardUserDefaults] setObject:data forKey:key];
     }
     // Clears cache only if it exists

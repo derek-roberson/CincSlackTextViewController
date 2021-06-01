@@ -7,7 +7,7 @@
 //
 
 #import "UIView+SLKAdditions.h"
-
+#import "UIApplication+ExtensionSafe.h"
 #import "SLKUIConstants.h"
 
 @implementation UIView (SLKAdditions)

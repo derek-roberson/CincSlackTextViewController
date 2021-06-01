@@ -14,6 +14,8 @@
 #import "SLKTypingIndicatorView.h"
 #import "SLKTypingIndicatorProtocol.h"
 
+#import <SlackTextViewController/UIApplication+ExtensionSafe.h>
+
 #import "SLKTextView+SLKAdditions.h"
 #import "UIScrollView+SLKAdditions.h"
 #import "UIView+SLKAdditions.h"

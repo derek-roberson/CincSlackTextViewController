@@ -6,7 +6,6 @@
 //  Licence: MIT-Licence
 //
 
-#define SLK_IS_LANDSCAPE         ([[UIApplication sharedApplication] statusBarOrientation] == UIDeviceOrientationLandscapeLeft || [[UIApplication sharedApplication] statusBarOrientation] == UIDeviceOrientationLandscapeRight)
 #define SLK_IS_IPAD              ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
 #define SLK_IS_IPHONE            ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
 #define SLK_IS_IPHONE4           (SLK_IS_IPHONE && SLKKeyWindowBounds().size.height < 568.0)
@@ -19,6 +18,9 @@
 #define SLK_KEYBOARD_NOTIFICATION_DEBUG     DEBUG && 0  // Logs every keyboard notification being sent
 
 static NSString *SLKTextViewControllerDomain = @"com.slack.TextViewController";
+
+#import "UIApplication+ExtensionSafe.h"
+
 
 /**
  Returns a constant font size difference reflecting the current accessibility settings.
@@ -43,9 +45,22 @@ __unused static CGFloat SLKPointSizeDifferenceForCategory(NSString *category)
     return 0;
 }
 
+__unused static Boolean SLKIsLandscape()
+{
+	UIApplication *sharedApp = [UIApplication safeSharedApplication];
+	if (sharedApp != nil) {
+		return ([sharedApp statusBarOrientation] == UIDeviceOrientationLandscapeLeft || [sharedApp statusBarOrientation] == UIDeviceOrientationLandscapeRight);
+	}
+	return false;
+}
+
 __unused static CGRect SLKKeyWindowBounds()
 {
-    return [[UIApplication sharedApplication] keyWindow].bounds;
+	UIApplication *sharedApp = [UIApplication safeSharedApplication];
+	if (sharedApp != nil) {
+		return sharedApp.keyWindow.bounds;
+	}
+	return CGRectZero;
 }
 
 __unused static CGRect SLKRectInvert(CGRect rect)
